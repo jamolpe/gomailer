@@ -1,3 +1,3 @@
-module github.com/jamolpe/gomailer
+module gomailer
 
 go 1.14
