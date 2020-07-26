@@ -26,36 +26,36 @@ type Email struct {
 
 type IMailer interface {
 	SendPlainEmail(data Email) (bool, error)
-	SendTemplateMail(data Email, tmplt template.Template, templateData interface{}) (bool, error)
+	SendTemplateMail(data Email, tmplt *template.Template, templateData interface{}) (bool, error)
 }
 
 func New(config Configuration) IMailer {
-	auth := smtp.PlainAuth("", config.smtpMail, config.smtpPassword, config.smtpHost)
+	auth := smtp.PlainAuth("", config.SmtpMail, config.SmtpPassword, config.SmtpHost)
 	return &Mailer{
 		auth: auth,
-		from: config.from,
+		from: config.From,
 	}
 }
 
 func (mailer *Mailer) SendPlainEmail(data Email) (bool, error) {
 	mime := "MIME-version: 1.0;\nContent-Type: text/plain; charset=\"UTF-8\";\n\n"
-	subject := "Subject: " + data.subject + "!\n"
-	msg := []byte(subject + mime + "\n" + data.body)
+	subject := "Subject: " + data.Subject + "!\n"
+	msg := []byte(subject + mime + "\n" + data.Body)
 	addr := "smtp.gmail.com:587"
 
-	if err := smtp.SendMail(addr, mailer.auth, "dhanush@geektrust.in", data.to, msg); err != nil {
+	if err := smtp.SendMail(addr, mailer.auth, mailer.from, data.To, msg); err != nil {
 		return false, err
 	}
 	return true, nil
 }
 
-func (mailer *Mailer) SendTemplateMail(data Email, tmplt template.Template, templateData interface{}) (bool, error) {
+func (mailer *Mailer) SendTemplateMail(data Email, tmplt *template.Template, templateData interface{}) (bool, error) {
 	buf := new(bytes.Buffer)
 	if err := tmplt.Execute(buf, templateData); err != nil {
 		return false, err
 	}
 	body := buf.String()
-	data.body = body
+	data.Body = body
 	if _, err := mailer.SendPlainEmail(data); err != nil {
 		return false, err
 	}
