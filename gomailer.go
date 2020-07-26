@@ -12,16 +12,16 @@ type Mailer struct {
 }
 
 type Configuration struct {
-	from         string
-	smtpMail     string
-	smtpPassword string
-	smtpHost     string
+	From         string
+	SmtpMail     string
+	SmtpPassword string
+	SmtpHost     string
 }
 
 type Email struct {
-	to      []string
-	subject string
-	body    string
+	To      []string
+	Subject string
+	Body    string
 }
 
 type IMailer interface {
