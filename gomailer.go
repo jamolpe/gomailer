@@ -38,9 +38,9 @@ func New(config Configuration) IMailer {
 }
 
 func (mailer *Mailer) SendPlainEmail(data Email) (bool, error) {
-	mime := "MIME-version: 1.0;\nContent-Type: text/plain; charset=\"UTF-8\";\n\n"
-	subject := "Subject: " + data.Subject + "!\n"
-	msg := []byte(subject + mime + "\n" + data.Body)
+	mime := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
+	subject := "Subject: " + data.Subject + "\n"
+	msg := []byte(subject + mime + data.Body)
 	addr := "smtp.gmail.com:587"
 
 	if err := smtp.SendMail(addr, mailer.auth, mailer.from, data.To, msg); err != nil {
