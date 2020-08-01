@@ -1,63 +1,62 @@
 package gomailer
 
 import (
-	"bytes"
+	"gomailer/core"
+	"gomailer/pkg/models"
 	"html/template"
-	"net/smtp"
 )
 
-type Mailer struct {
-	auth smtp.Auth
-	from string
-}
-
-type Configuration struct {
-	From         string
-	SmtpMail     string
-	SmtpPassword string
-	SmtpHost     string
-}
-
-type Email struct {
-	To      []string
-	Subject string
-	Body    string
-}
-
 type IMailer interface {
-	SendPlainEmail(data Email) (bool, error)
-	SendTemplateMail(data Email, tmplt *template.Template, templateData interface{}) (bool, error)
+	SendPlainEmail(data models.Email) (bool, *ValidationError, error)
+	SendTemplateMail(data models.Email, tmplt *template.Template, templateData interface{}) (bool, *ValidationError, error)
 }
 
-func New(config Configuration) IMailer {
-	auth := smtp.PlainAuth("", config.SmtpMail, config.SmtpPassword, config.SmtpHost)
+type Mailer struct {
+	core core.ICore
+}
+
+type ValidationError struct {
+	Code    string
+	Message string
+}
+
+func New(config models.Configuration) IMailer {
 	return &Mailer{
-		auth: auth,
-		from: config.From,
+		core: core.New(config),
 	}
 }
 
-func (mailer *Mailer) SendPlainEmail(data Email) (bool, error) {
-	mime := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
-	subject := "Subject: " + data.Subject + "\n"
-	msg := []byte(subject + mime + data.Body)
-	addr := "smtp.gmail.com:587"
-
-	if err := smtp.SendMail(addr, mailer.auth, mailer.from, data.To, msg); err != nil {
-		return false, err
+func (m *Mailer) validateMinimumData(data models.Email) *ValidationError {
+	if data.Body == "" {
+		return &ValidationError{Code: "MAILER_VALIDATION_ERROR001", Message: "email body con not be void"}
 	}
-	return true, nil
+	if data.From == "" {
+		return &ValidationError{Code: "MAILER_VALIDATION_ERROR002", Message: "email from can not be void"}
+	}
+	if !(len(data.To) > 0) {
+		return &ValidationError{Code: "MAILER_VALIDATION_ERROR003", Message: "email has no from to send"}
+	}
+	return nil
 }
 
-func (mailer *Mailer) SendTemplateMail(data Email, tmplt *template.Template, templateData interface{}) (bool, error) {
-	buf := new(bytes.Buffer)
-	if err := tmplt.Execute(buf, templateData); err != nil {
-		return false, err
+func (m *Mailer) SendPlainEmail(data models.Email) (bool, *ValidationError, error) {
+	if validation := m.validateMinimumData(data); validation != nil {
+		return false, validation, nil
 	}
-	body := buf.String()
-	data.Body = body
-	if _, err := mailer.SendPlainEmail(data); err != nil {
-		return false, err
+	worked, err := m.core.SendMail(data, true)
+	if worked {
+		return worked, nil, nil
 	}
-	return true, nil
+	return false, nil, err
+}
+
+func (m *Mailer) SendTemplateMail(data models.Email, tmplt *template.Template, templateData interface{}) (bool, *ValidationError, error) {
+	if validation := m.validateMinimumData(data); validation != nil {
+		return false, validation, nil
+	}
+	worked, err := m.core.SendHTMLMail(data, tmplt, templateData)
+	if worked {
+		return worked, nil, nil
+	}
+	return false, nil, err
 }

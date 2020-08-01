@@ -1,12 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"gomailer"
+	"gomailer/pkg/models"
 	"html/template"
 	"log"
 )
 
-var smtpMail, smtpPassword, smtpHost = "---", "----", "smtp.gmail.com"
+var smtpMail, smtpPassword, smtpHost = "email@gmail.com", "emailpassword", "smtp.gmail.com"
 
 type templateData struct {
 	Name string
@@ -14,13 +16,16 @@ type templateData struct {
 }
 
 func main() {
-	config := gomailer.Configuration{From: "----", SmtpMail: smtpMail, SmtpPassword: smtpPassword, SmtpHost: smtpHost}
+	config := models.Configuration{SmtpMail: smtpMail, SmtpPassword: smtpPassword, SmtpHost: smtpHost}
 	mailer := gomailer.New(config)
-	mail := gomailer.Email{To: []string{"----", "---"}, Subject: "im html template"}
+	mail := models.Email{To: []string{"email@gmail.com", smtpMail}, Subject: "im html template", Body: "im basic email", From: "email@gmail.com"}
+
 	t, err := template.ParseFiles("basicTemplate.html")
 	if err != nil {
 		log.Fatal(err)
 	}
 	templateData := templateData{Name: "number", URL: "google.com"}
-	mailer.SendTemplateMail(mail, t, templateData)
+	sent, validationErr, err := mailer.SendTemplateMail(mail, t, templateData)
+	fmt.Println("result: %v,%v,%v", sent, validationErr, err)
+
 }
